@@ -64,8 +64,9 @@ export function createApp({ services: svc, identity, config, integrations }) {
   api.post('/public/forms/:slug/inquiries', rateLimit({ windowMs: 10 * 60_000, max: 10 }), async (req, res) => {
     const r = await svc.submitInquiry(req.params.slug, req.body || {}, { deferProcessing: true });
     res.status(201).json({ ok: true, message: 'Thanks! We received your message and will reply soon.' });
-    if (r.leadId && !r.duplicate) {
-      svc.processNewLead(r.leadId).catch((e) => console.error('[workflow] processing failed', r.leadId, e));
+    if (r.leadId) {
+      const run = r.duplicate ? svc.processRepeatMessage(r.leadId) : svc.processNewLead(r.leadId);
+      run.catch((e) => console.error('[workflow] processing failed', r.leadId, e));
     }
   });
   // Scheduled job endpoint (e.g. Railway cron or an uptime pinger). Requires CRON_SECRET.

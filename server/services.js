@@ -167,6 +167,15 @@ export function createServices({ db, ai, email, identity, clock = () => new Date
     return { lead, message };
   }
 
+  /** A family already in the pipeline wrote again: draft a reply to their latest message for review. */
+  async function processRepeatMessage(leadId) {
+    const lead = await one('select * from leads where id = $1', [leadId]);
+    if (!lead) return null;
+    const ws = await getWs(lead.workspace_id);
+    // Before the first reply, the new draft replaces the old one; afterwards it is an extra reply.
+    return draftFor(ws, lead, await getKb(ws.id), lead.first_response_at ? 'manual' : 'first_response');
+  }
+
   // ------------------------------------------------------------ public inquiry
   async function submitInquiry(slug, input, { deferProcessing = false } = {}) {
     const ws = await one('select * from workspaces where slug = $1', [String(slug || '').toLowerCase()]);
@@ -194,7 +203,8 @@ export function createServices({ db, ai, email, identity, clock = () => new Date
       if (dup) {
         await q(`update leads set message = message || $3, updated_at = $4 where id = $1 and workspace_id = $2`,
           [dup.id, ws.id, `\n\n--- Additional message (${nowIso().slice(0, 10)}) ---\n${data.message}`, nowIso()]);
-        await logEvent(ws.id, dup.id, 'system', 'lead.duplicate_inquiry', 'skipped', { note: 'Appended to existing open lead; no new workflow started.' });
+        await logEvent(ws.id, dup.id, 'system', 'lead.duplicate_inquiry', 'success', { note: 'New message added to the existing open lead; a reply will be drafted.' });
+        if (!deferProcessing) await processRepeatMessage(dup.id);
         return { ok: true, leadId: dup.id, duplicate: true };
       }
     }
@@ -629,7 +639,7 @@ export function createServices({ db, ai, email, identity, clock = () => new Date
   }
 
   return {
-    submitInquiry, processNewLead, listLeads, getLead, updateLead, changeStage, regenerateDraft,
+    submitInquiry, processNewLead, processRepeatMessage, listLeads, getLead, updateLead, changeStage, regenerateDraft,
     listQueue, editMessage, createManualMessage, approveMessage, rejectMessage,
     bookAppointment, updateAppointment, listAppointments, runDueReminders, listEvents, dashboard,
     myWorkspaces, resolveContext, createWorkspace, getWorkspace, updateWorkspace,

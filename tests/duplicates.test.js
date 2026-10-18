@@ -73,6 +73,26 @@ test('the same family writing again joins their open lead instead of starting a 
   const leads = await env.db.query('select * from leads');
   assert.equal(leads.length, 1);
   assert.match(leads[0].message, /weekends/);
-  const drafts = await env.db.query(`select * from messages where purpose='first_response'`);
+  // Only one reply waits for review: the newer draft (covering both messages) replaced the older one.
+  const drafts = await env.db.query(`select * from messages where purpose='first_response' and status='pending_review'`);
   assert.equal(drafts.length, 1);
+});
+
+test('when a family writes again, their new message gets a fresh draft in the review queue', async (t) => {
+  const env = await setup();
+  t.after(() => env.close());
+  // Before the first reply: the new draft replaces the old one (one pending first reply).
+  const first = await env.services.submitInquiry('bright-path', { email: 'mum@example.com', message: 'Algebra help please' });
+  await env.services.submitInquiry('bright-path', { email: 'mum@example.com', message: 'Also, is SAT prep available?' });
+  let msgs = await env.db.query(`select * from messages where lead_id=$1 order by created_at`, [first.leadId]);
+  assert.equal(msgs.filter((m) => m.status === 'pending_review').length, 1);
+  assert.equal(msgs.at(-1).purpose, 'first_response');
+  // After the first reply has been sent: an extra reply is queued for the new message.
+  await env.services.approveMessage(env.ctxA, msgs.at(-1).id);
+  env.advanceHours(5);
+  await env.services.submitInquiry('bright-path', { email: 'mum@example.com', message: 'Can we start next week?' });
+  msgs = await env.db.query(`select * from messages where lead_id=$1 and status='pending_review'`, [first.leadId]);
+  assert.equal(msgs.length, 1);
+  assert.equal(msgs[0].purpose, 'manual');
+  assert.equal((await env.services.dashboard(env.ctxA)).pending_review, 1, 'shows under Needs you');
 });

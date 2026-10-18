@@ -4,7 +4,7 @@ import { useApi } from '../session.jsx';
 import { Empty, ErrorNote, PageHead, fmtDate, stageLabel } from '../ui.jsx';
 
 const ACTION = {
-  'lead.created': 'Inquiry recorded', 'lead.duplicate_inquiry': 'Repeat message added to open lead', 'lead.updated': 'Lead details edited',
+  'lead.created': 'Inquiry recorded', 'lead.duplicate_inquiry': 'Family wrote again — message added to their lead', 'lead.updated': 'Lead details edited',
   'lead.stage_changed': 'Stage changed', 'lead.flagged_spam': 'Looks like spam — no draft created',
   'ai.analyze': 'AI read the inquiry', 'ai.draft': 'AI drafted a reply', 'message.queued_for_review': 'Message added to review queue',
   'message.edited': 'Message edited', 'message.sent': 'Message sent', 'message.rejected': 'Message discarded',
