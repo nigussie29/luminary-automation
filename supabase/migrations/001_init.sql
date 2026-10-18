@@ -1,3 +1,5 @@
+set search_path to automation, public;
+
 -- Luminary Automation — initial schema
 -- Runs on Supabase Postgres (and on PGlite for local demo/tests, with a stub `auth.uid()`).
 --
@@ -164,7 +166,7 @@ create index if not exists ai_usage_ws_idx on ai_usage(workspace_id, created_at)
 
 -- ---------------------------------------------------------------- Row Level Security (defense in depth)
 create or replace function is_member(ws uuid) returns boolean
-  language sql stable security definer set search_path = public as $$
+  language sql stable security definer set search_path = automation, public as $$
     select exists (select 1 from memberships m where m.workspace_id = ws and m.user_id = auth.uid());
   $$;
 

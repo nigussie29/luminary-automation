@@ -34,6 +34,8 @@ export async function createDb({ databaseUrl = process.env.DATABASE_URL, dataDir
       ssl: /localhost|127\.0\.0\.1/.test(databaseUrl) ? false : { rejectUnauthorized: false },
       max: Number(process.env.DB_POOL_MAX || 5),
     });
+    // Luminary Automation's tables live in the `automation` schema (shared Supabase project).
+    pool.on('connect', (client) => { client.query('set search_path to automation, public').catch(() => {}); });
     return {
       kind: 'postgres',
       async query(sql, params = []) { return (await pool.query(sql, params)).rows; },
@@ -53,7 +55,8 @@ export async function createDb({ databaseUrl = process.env.DATABASE_URL, dataDir
     async close() { await pglite.close(); },
   };
   await db.exec(SUPABASE_SHIM);
+  await db.exec('set search_path to automation, public');
   for (const sql of migrationSql()) await db.exec(sql);
-  await db.exec('grant usage on schema public to authenticated; grant select on all tables in schema public to authenticated;');
+  await db.exec('grant usage on schema automation to authenticated; grant select on all tables in schema automation to authenticated;');
   return db;
 }

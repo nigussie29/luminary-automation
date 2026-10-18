@@ -46,6 +46,20 @@ export function createApp({ services: svc, identity, config, integrations }) {
     if (identity.mode !== 'demo') throw notFound();
     res.json(DEMO_USERS);
   });
+  // Other sites you own (e.g. the Luminary Academy enrollment form) may post inquiries here.
+  // Only origins listed in ALLOWED_ORIGINS get CORS headers; everything else is same-origin only.
+  api.use('/public', (req, res, next) => {
+    const origin = req.get('origin');
+    if (origin && config.allowedOrigins.includes(origin)) {
+      res.set('Access-Control-Allow-Origin', origin);
+      res.set('Vary', 'Origin');
+      res.set('Access-Control-Allow-Methods', 'GET, POST');
+      res.set('Access-Control-Allow-Headers', 'content-type');
+      res.set('Access-Control-Max-Age', '86400');
+    }
+    if (req.method === 'OPTIONS') return res.sendStatus(origin && config.allowedOrigins.includes(origin) ? 204 : 403);
+    next();
+  });
   api.get('/public/forms/:slug', async (req, res) => res.json(await svc.publicForm(req.params.slug)));
   api.post('/public/forms/:slug/inquiries', rateLimit({ windowMs: 10 * 60_000, max: 10 }), async (req, res) => {
     const r = await svc.submitInquiry(req.params.slug, req.body || {}, { deferProcessing: true });

@@ -179,6 +179,9 @@ export function createServices({ db, ai, email, identity, clock = () => new Date
       parent_name: clip(input.parent_name, 120), student_name: clip(input.student_name, 120),
       email: clip(input.email, 200)?.toLowerCase() || null, phone: clip(input.phone, 40), message: clip(input.message, 5000),
     };
+    // Optional context from embedded forms (e.g. the Luminary Academy track a student picked).
+    const interest = clip(input.interest, 120);
+    if (interest && data.message) data.message = `${data.message}\n\nInterested in: ${interest}`;
     if (!data.message || data.message.length < 5) throw new HttpError(400, 'Please describe what you are looking for.');
     if (!data.email && !data.phone) throw new HttpError(400, 'Please include an email address or phone number.');
     if (data.email && !EMAIL_RE.test(data.email)) throw new HttpError(400, 'Please enter a valid email address.');

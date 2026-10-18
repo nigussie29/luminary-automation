@@ -10,7 +10,7 @@ import { loadConfig } from '../server/config.js';
 export const [OWNER_A, STAFF_A, OWNER_B] = DEMO_USERS;
 
 export async function setup({ plan = 'pilot' } = {}) {
-  const config = loadConfig({ CRON_SECRET: 'test-secret' }); // no Supabase/AI/email keys -> demo + simulated
+  const config = loadConfig({ CRON_SECRET: 'test-secret', ALLOWED_ORIGINS: 'https://theluminaryacademy.net' }); // no Supabase/AI/email keys -> demo + simulated
   const db = await createDb({ databaseUrl: '' });
   let now = new Date('2026-10-19T14:00:00Z');
   const clock = () => new Date(now);
@@ -57,10 +57,11 @@ export async function setup({ plan = 'pilot' } = {}) {
     const text = await res.text();
     return { status: res.status, body: text ? JSON.parse(text) : null };
   }
+  const rawFetch = (path, init) => fetch(base + path, init);
   const events = (wsId, action) => db.query(`select * from automation_events where workspace_id=$1 ${action ? 'and action=$2' : ''} order by created_at`, action ? [wsId, action] : [wsId]);
 
   return {
-    db, services, ai, email, sent, http, events, clock, advanceHours, setNow, wsA, wsB,
+    db, services, ai, email, sent, http, rawFetch, events, clock, advanceHours, setNow, wsA, wsB,
     ctxA: { userId: OWNER_A.id, workspaceId: wsA.id, role: 'owner' },
     async close() { server.close(); await db.close(); },
   };

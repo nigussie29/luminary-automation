@@ -18,6 +18,8 @@ export function loadConfig(env = process.env) {
     resendKey: env.RESEND_API_KEY || '',
     emailFrom: env.EMAIL_FROM || '',
     cronSecret: env.CRON_SECRET || '',
+    // Comma-separated sites allowed to post to the public inquiry form, e.g. https://theluminaryacademy.net
+    allowedOrigins: (env.ALLOWED_ORIGINS || '').split(',').map((o) => o.trim().replace(/\/$/, '')).filter(Boolean),
     reminderIntervalMs: Number(env.REMINDER_INTERVAL_MS || 60_000),
     seedDemo: env.SEED_DEMO !== 'false',
   };

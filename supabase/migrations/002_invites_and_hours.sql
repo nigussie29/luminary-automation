@@ -1,3 +1,5 @@
+set search_path to automation, public;
+
 -- 002: staff invites without the Supabase service-role key, and business hours.
 
 -- Owners invite staff by email. When someone signs in with a verified email that has a pending
