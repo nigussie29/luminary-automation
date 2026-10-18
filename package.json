@@ -5,7 +5,7 @@
   "description": "Inquiry-to-enrollment automation for tutoring centers (MVP)",
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "concurrently -n api,web -c blue,green \"node --watch server/index.js\" \"vite\"",
@@ -20,19 +20,19 @@
   "dependencies": {
     "@electric-sql/pglite": "^0.5.10",
     "@supabase/supabase-js": "^2.118.0",
-    "dotenv": "^18.0.8",
-    "express": "^5.3.0",
-    "pg": "^8.23.1"
-  },
-  "devDependencies": {
-    "@electric-sql/pglite-socket": "^0.2.13",
     "@tailwindcss/vite": "^4.3.3",
     "@vitejs/plugin-react": "^6.1.2",
-    "concurrently": "^10.0.6",
+    "dotenv": "^18.0.8",
+    "express": "^5.3.0",
+    "pg": "^8.23.1",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "react-router-dom": "^7.18.4",
     "tailwindcss": "^4.3.3",
     "vite": "^8.3.4"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite-socket": "^0.2.13",
+    "concurrently": "^10.0.6"
   }
 }
