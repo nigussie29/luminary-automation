@@ -27,7 +27,8 @@ function PasswordLogin({ supabase }) {
     e.preventDefault();
     run(async () => {
       const fn = mode === 'signin' ? supabase.auth.signInWithPassword : supabase.auth.signUp;
-      const { data, error: err } = await fn.call(supabase.auth, { email, password });
+      // Confirmation emails link back to this app (shared Supabase project with Luminary Academy).
+      const { data, error: err } = await fn.call(supabase.auth, { email, password, options: { emailRedirectTo: window.location.origin } });
       if (err) throw err;
       if (mode === 'signup' && !data.session) setNote('Check your email to confirm your account, then sign in.');
     });
