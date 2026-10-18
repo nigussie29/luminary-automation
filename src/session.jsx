@@ -16,6 +16,7 @@ export async function api(path, { method = 'GET', body } = {}) {
   const token = await tokenGetter();
   const res = await fetch(`/api${path}`, {
     method,
+    cache: 'no-store',
     headers: {
       'content-type': 'application/json',
       ...(token ? { authorization: `Bearer ${token}` } : {}),
@@ -78,13 +79,25 @@ export function SessionProvider({ children }) {
   return <SessionCtx.Provider value={value}>{children}</SessionCtx.Provider>;
 }
 
-/** Small data hook: load(path) with reload. */
-export function useApi(path, deps = []) {
+/** Small data hook: load(path) with reload.
+ *  refreshMs: also reload quietly in the background on that interval (lists that change on their own).
+ *  Every page also reloads quietly when the browser tab regains focus. */
+export function useApi(path, { refreshMs = 0 } = {}) {
   const [state, setState] = useState({ data: null, error: null, loading: true });
-  const load = useCallback(async () => {
-    setState((s) => ({ ...s, loading: true }));
-    try { setState({ data: await api(path), error: null, loading: false }); } catch (e) { setState({ data: null, error: e, loading: false }); }
-  }, [path]); // eslint-disable-line react-hooks/exhaustive-deps
-  useEffect(() => { load(); }, [load, ...deps]); // eslint-disable-line react-hooks/exhaustive-deps
-  return { ...state, reload: load };
+  const load = useCallback(async ({ quiet = false } = {}) => {
+    if (!quiet) setState((s) => ({ ...s, loading: true }));
+    try { setState({ data: await api(path), error: null, loading: false }); } catch (e) {
+      // A failed background refresh keeps the data already on screen.
+      setState((s) => (quiet && s.data ? s : { data: null, error: e, loading: false }));
+    }
+  }, [path]);
+  useEffect(() => { load(); }, [load]);
+  useEffect(() => {
+    const quiet = () => { if (document.visibilityState === 'visible') load({ quiet: true }); };
+    window.addEventListener('focus', quiet);
+    document.addEventListener('visibilitychange', quiet);
+    const t = refreshMs ? setInterval(quiet, refreshMs) : null;
+    return () => { window.removeEventListener('focus', quiet); document.removeEventListener('visibilitychange', quiet); if (t) clearInterval(t); };
+  }, [load, refreshMs]);
+  return { ...state, reload: () => load() };
 }

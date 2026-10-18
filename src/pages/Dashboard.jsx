@@ -35,8 +35,8 @@ function Funnel({ d }) {
 
 export default function Dashboard() {
   const { status, workspace } = useSession();
-  const dash = useApi('/dashboard');
-  const fresh = useApi('/leads?stage=new&limit=8');
+  const dash = useApi('/dashboard', { refreshMs: 20000 });
+  const fresh = useApi('/leads?stage=new&limit=8', { refreshMs: 20000 });
   const [ran, setRan] = useState(null);
   if (dash.error) return <ErrorNote error={dash.error} />;
   if (!dash.data) return <p className="text-slate">Loading…</p>;

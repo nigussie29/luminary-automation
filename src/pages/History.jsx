@@ -46,7 +46,7 @@ export function EventRow({ e, showLead }) {
 
 export default function History() {
   const [status, setStatus] = useState('');
-  const ev = useApi(`/events?limit=300${status ? `&status=${status}` : ''}`);
+  const ev = useApi(`/events?limit=300${status ? `&status=${status}` : ''}`, { refreshMs: 20000 });
   return (
     <>
       <PageHead title="Automation history" sub="Every automated step and every error, newest first." />

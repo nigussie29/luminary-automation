@@ -8,7 +8,7 @@ export default function Leads() {
   const stage = params.get('stage') || '';
   const [text, setText] = useState(params.get('q') || '');
   const qs = new URLSearchParams({ ...(stage && { stage }), ...(params.get('q') && { q: params.get('q') }), limit: '200' }).toString();
-  const leads = useApi(`/leads?${qs}`);
+  const leads = useApi(`/leads?${qs}`, { refreshMs: 20000 });
   const set = (k, v) => { const p = new URLSearchParams(params); if (v) p.set(k, v); else p.delete(k); setParams(p); };
 
   return (

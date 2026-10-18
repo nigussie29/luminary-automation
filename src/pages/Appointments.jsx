@@ -5,7 +5,7 @@ import { Empty, ErrorNote, PageHead, useAction } from '../ui.jsx';
 const KIND = { consultation: 'Consultation', assessment: 'Assessment', trial_session: 'Trial session' };
 
 export default function Appointments() {
-  const a = useApi('/appointments');
+  const a = useApi('/appointments', { refreshMs: 30000 });
   const act = useAction();
   const set = (id, status) => act.run(async () => { await api(`/appointments/${id}`, { method: 'PATCH', body: { status } }); a.reload(); });
   const byDay = {};
