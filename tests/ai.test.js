@@ -20,6 +20,9 @@ test('live analyze: parses JSON, rejects services not in the list, meters cost, 
   assert.equal(reply.last.init.headers['x-api-key'], 'sk-test');
   assert.equal(reply.last.init.body.model, 'claude-haiku-5-5');
   assert.match(reply.last.init.body.messages[0].content, /<inquiry>/, 'untrusted text is delimited');
+  const fmt = reply.last.init.body.output_config.format;
+  assert.equal(fmt.type, 'json_schema', 'structured outputs requested');
+  assert.equal(fmt.schema.additionalProperties, false);
   assert.ok(Math.abs(out.usage.cost_usd - (1000 * 0.10 + 200 * 0.50) / 1e6) < 1e-12);
 });
 
@@ -27,4 +30,14 @@ test('live draft: provider errors surface as exceptions (caller records them)', 
   const config = loadConfig({ ANTHROPIC_API_KEY: 'sk-test' });
   const ai = createAi(config, { fetchImpl: async () => new Response('overloaded', { status: 529 }) });
   await assert.rejects(ai.draft({ lead: { message: 'x' }, workspace: { name: 'W' }, kb: [] }), /AI provider error 529/);
+});
+
+test('live: refusals and cut-off replies become clear, recorded errors', async () => {
+  const config = loadConfig({ ANTHROPIC_API_KEY: 'sk-test' });
+  for (const [stop, msg] of [['refusal', /declined/], ['max_tokens', /cut off/]]) {
+    const ai = createAi(config, { fetchImpl: async () => new Response(JSON.stringify({ content: [{ type: 'text', text: '{"sub' }], stop_reason: stop, usage: {} }), { status: 200 }) });
+    await assert.rejects(ai.draft({ lead: { message: 'x' }, workspace: { name: 'W' }, kb: [] }), msg);
+  }
+  const ai = createAi(config, { fetchImpl: async () => new Response(JSON.stringify({ content: [{ type: 'text', text: 'Sure! Here is a reply.' }], stop_reason: 'end_turn', usage: {} }), { status: 200 }) });
+  await assert.rejects(ai.draft({ lead: { message: 'x' }, workspace: { name: 'W' }, kb: [] }), /not valid JSON \(stop: end_turn, blocks: text, starts: "Sure!/);
 });
